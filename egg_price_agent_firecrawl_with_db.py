@@ -30,8 +30,7 @@ class EggPriceAgentFireCrawlWithDB:
     def _store_initial_prices(self):
         """Store current egg prices in MongoDB for specified cities only"""
         allowed_cities = {
-            'bangalore': 'bangalore',
-            'bengaluru': 'bangalore',  # Handle both names
+            'bengaluru': 'bengaluru',  # Handle both names
             'chennai': 'chennai',
             'mumbai': 'mumbai',
             'hyderabad': 'hyderabad',
@@ -63,13 +62,19 @@ class EggPriceAgentFireCrawlWithDB:
                 if isinstance(value, str):
                     # Remove rupee symbol and any non-numeric characters except decimal point
                     price_str = ''.join(c for c in value if c.isdigit() or c == '.')
-                    if price_str and not price_str.endswith('.'):
-                        try:
-                            cleaned[key] = float(price_str)
-                        except ValueError:
-                            continue
+                    # Additional validation to handle lone decimal points
+                    if price_str and not price_str.endswith('.') and not price_str.startswith('.'):
+                        # Check if there's exactly one decimal point
+                        if price_str.count('.') <= 1:
+                            try:
+                                price_float = float(price_str)
+                                if price_float > 0:  # Only accept positive values
+                                    cleaned[key] = price_float
+                            except ValueError:
+                                continue
             return cleaned if cleaned else None
-        except Exception:
+        except Exception as e:
+            print(f"Error cleaning price data: {e}")
             return None
     
     def process_query(self, query):

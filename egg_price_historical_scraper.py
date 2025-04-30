@@ -12,7 +12,7 @@ class EggPriceHistoricalScraper:
         self.city_urls = {
             'mumbai': 'mumbai-egg-rate-today',
             'delhi': 'delhi-egg-rate-today',
-            'bangalore': 'bangalore-egg-rate-today',
+            'bengaluru': 'bengaluru-egg-rate-today',  # Map Bengaluru to the same URL
             'chennai': 'chennai-egg-rate-today',
             'hyderabad': 'hyderabad-egg-rate-today',
             'kolkata': 'kolkata-egg-rate-today'
@@ -53,14 +53,15 @@ class EggPriceHistoricalScraper:
                             date = datetime.strptime(date_text, '%d-%m-%Y').date()
                             
                             # Extract price, handling various formats
-                            # First try to find price with rupee symbol and decimal
-                            price_match = re.search(r'(?:₹\s*)?(\d+(?:\.\d{1,2})?)', price_text)
-                            if not price_match:
-                                # Try to find just numbers
-                                price_match = re.search(r'\b(\d+)\b', price_text)
+                            # Remove rupee symbol and any non-numeric characters except decimal point
+                            price_str = ''.join(c for c in price_text if c.isdigit() or c == '.')
                             
-                            if price_match:
-                                price = float(price_match.group(1))
+                            # Ensure the string is not empty and doesn't end with a decimal point
+                            if price_str and not price_str.endswith('.'):
+                                try:
+                                    price = float(price_str)
+                                except ValueError:
+                                    continue
                                 if price > 0:
                                     # Calculate prices for different quantities
                                     historical_data.append({

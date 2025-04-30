@@ -121,7 +121,7 @@ class EggPriceAgentFireCrawl:
                                     # Use the actual scraped prices for Mumbai
                                     if prices[0]:
                                         piece_price = prices[0]
-                                        price_value = float(re.search(r'[d.]+', piece_price).group())
+                                        price_value = float(re.search(r'[\d.]+', piece_price).group())
                                         prices[1] = f"₹{price_value * 30:.2f}"
                                         prices[2] = f"₹{price_value * 100:.2f}"
                                         prices[3] = f"₹{price_value * 210:.2f}"
@@ -218,14 +218,15 @@ class EggPriceAgentFireCrawl:
             return {}
     
     def fetch_egg_prices(self):
-        """Fetch egg prices from the stored city data"""
+        """Fetch fresh egg prices by scraping the website"""
         try:
-            # If city_prices is empty, try to scrape again
-            if not self.city_prices:
-                scraped_data = self.scrape_egg_prices()
-                if scraped_data:
-                    self.city_prices = scraped_data
+            # Always try to get fresh data first
+            scraped_data = self.scrape_egg_prices()
+            if scraped_data:
+                self.city_prices = scraped_data
+                return self.city_prices
             
+            # Fallback to cached data only if scraping fails
             return self.city_prices
                 
         except Exception as e:
