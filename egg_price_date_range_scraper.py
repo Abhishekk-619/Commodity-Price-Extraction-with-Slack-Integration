@@ -36,6 +36,12 @@ def scrape_date_range(start_date_str, end_date_str):
             # Filter data for the specified date range
             for data in historical_data:
                 if start_date <= data['date'] <= end_date:
+                    # Check if data already exists
+                    existing_data = db.get_prices_by_date(city, data['date'])
+                    if existing_data:
+                        print(f"Data already exists for {city} on {data['date']}")
+                        continue
+                    
                     # Store in database
                     result = db.store_egg_prices(
                         city=city,
@@ -55,12 +61,28 @@ def scrape_date_range(start_date_str, end_date_str):
         print(f"Error: {str(e)}")
 
 def main():
-    parser = argparse.ArgumentParser(description='Scrape egg prices for a specific date range')
-    parser.add_argument('start_date', help='Start date (DD-MM-YYYY)')
-    parser.add_argument('end_date', help='End date (DD-MM-YYYY)')
+    print("Welcome to Egg Price Date Range Scraper!")
+    print("Please enter dates in DD-MM-YYYY format")
     
-    args = parser.parse_args()
-    scrape_date_range(args.start_date, args.end_date)
+    while True:
+        try:
+            start_date = input("\nEnter start date (DD-MM-YYYY): ").strip()
+            # Validate start date format
+            datetime.strptime(start_date, '%d-%m-%Y')
+            break
+        except ValueError:
+            print("Invalid date format! Please use DD-MM-YYYY format")
+    
+    while True:
+        try:
+            end_date = input("Enter end date (DD-MM-YYYY): ").strip()
+            # Validate end date format
+            datetime.strptime(end_date, '%d-%m-%Y')
+            break
+        except ValueError:
+            print("Invalid date format! Please use DD-MM-YYYY format")
+    
+    scrape_date_range(start_date, end_date)
 
 if __name__ == '__main__':
     main()
