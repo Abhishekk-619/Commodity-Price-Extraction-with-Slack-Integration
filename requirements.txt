@@ -1,3 +1,12 @@
 requests==2.31.0
 beautifulsoup4==4.12.2
-pymongo==4.6.1
+pmongo==4.6.1
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.5.3
+python-dotenv==1.0.0
+playwright==1.40.0
+streamlit==1.31.0
+plotly==5.18.0
+pandas==2.1.4
+sqlite3==3.35.0

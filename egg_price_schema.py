@@ -7,6 +7,7 @@ class EggPriceDatabase:
             self.client = MongoClient(connection_string)
             self.db = self.client[db_name]
             self.egg_prices = self.db.egg_prices
+            self.copra_prices = self.db.copra_prices
             # Test connection
             self.client.admin.command('ping')
             print("Connected successfully to MongoDB")
@@ -23,6 +24,14 @@ class EggPriceDatabase:
             price_data (dict): Dictionary containing egg prices
             date (datetime.date, optional): The date for historical prices
         """
+        document = {
+            'city': city.lower(),
+            'commodity': 'egg',
+            'rates': self._extract_rates(price_data),
+            'date': date or datetime.utcnow(),
+            'query_text': str(price_data),
+            'timestamp': datetime.utcnow()
+        }
         try:
             # Extract rates from price data
             rates = self._extract_rates(price_data)
@@ -46,6 +55,7 @@ class EggPriceDatabase:
                 
                 document = {
                     'city': city.lower(),  # Normalize city names
+                    'commodity': 'egg',  # Add commodity field to stored document
                     'rates': rates,
                     'timestamp': current_timestamp,  # When the data was stored
                     'date': historical_date,  # When the prices were actually recorded
@@ -56,6 +66,7 @@ class EggPriceDatabase:
                 result = self.egg_prices.update_one(
                     {
                         'city': city.lower(),
+                        'commodity': 'egg',
                         'date': historical_date
                     },
                     {'$set': document},
@@ -76,6 +87,48 @@ class EggPriceDatabase:
             print(f"Error storing egg prices: {e}")
             return None
     
+    def get_prices_by_date(self, city, date):
+        """
+        Get egg prices for a specific city and date
+        
+        Args:
+            city (str): City name to get prices for
+            date (datetime): Date to get prices for
+            
+        Returns:
+            dict: Price data for the specified city and date
+        """
+        try:
+            # Convert date to datetime at midnight if it's just a date
+            if not hasattr(date, 'hour'):
+                date = datetime.combine(date, datetime.min.time())
+            
+            # Query the database for the specific city and date
+            result = self.egg_prices.find_one(
+                {
+                    'city': city.lower(),
+                    'commodity': 'egg',
+                    'date': {
+                        '$gte': date,
+                        '$lt': datetime.combine(date.date(), datetime.max.time())
+                    }
+                }
+            )
+            
+            if result:
+                return {
+                    'city': result['city'],
+                    'rates': result['rates'],
+                    'timestamp': result['timestamp'],
+                    'date': result['date'],
+                    'query_text': result['query_text']
+                }
+            return None
+            
+        except Exception as e:
+            print(f"Error getting prices by date: {e}")
+            return None
+
     def _extract_rates(self, response):
         """
         Extract the four types of rates from agent response
@@ -149,12 +202,15 @@ class EggPriceDatabase:
             city (str, optional): Name of the city. If None, returns all cities.
         """
         try:
+            query = {'commodity': 'egg'}
             if city:
                 # Get latest price for specific city
-                result = self.egg_prices.find({'city': city}).sort('timestamp', -1).limit(1)
+                query['city'] = city
+                result = self.egg_prices.find(query).sort('timestamp', -1).limit(1)
             else:
                 # Get latest prices for all cities
                 pipeline = [
+                    {'$match': {'commodity': 'egg'}},
                     {'$sort': {'timestamp': -1}},
                     {'$group': {
                         '_id': '$city',
@@ -167,6 +223,42 @@ class EggPriceDatabase:
             
         except Exception as e:
             print(f"Error retrieving egg prices: {e}")
+            return []
+    
+    def get_available_cities(self):
+        """Get a list of all available cities"""
+        try:
+            # Return only the specified 6 cities
+            cities = ["bengaluru", "chennai", "delhi", "kolkata", "mumbai", "hyderabad"]
+            return sorted(cities)
+        except Exception as e:
+            print(f"Error getting available cities: {e}")
+            return []
+
+    def get_prices_by_date_range(self, city, start_date, end_date):
+        try:
+            # Convert dates to datetime at midnight if they're just dates
+            if not hasattr(start_date, 'hour'):
+                start_date = datetime.combine(start_date, datetime.min.time())
+            if not hasattr(end_date, 'hour'):
+                end_date = datetime.combine(end_date, datetime.max.time())
+            
+            # Query the database for the specific city and date range
+            results = self.egg_prices.find(
+                {
+                    'city': city.lower(),
+                    'commodity': 'egg',
+                    'date': {
+                        '$gte': start_date,
+                        '$lte': end_date
+                    }
+                }
+            ).sort('date', 1)  # Sort by date ascending
+            
+            return list(results)
+            
+        except Exception as e:
+            print(f"Error getting prices by date range: {e}")
             return []
     
     def close(self):

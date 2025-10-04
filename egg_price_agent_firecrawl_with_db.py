@@ -4,23 +4,9 @@ from egg_price_historical_scraper import EggPriceHistoricalScraper
 from datetime import datetime
 import re
 
-"""
-Egg Price Agent FireCrawl with MongoDB Integration
-
-This module extends the original EggPriceAgentFireCrawl with database functionality
-to store egg prices with timestamps in MongoDB.
-"""
-
 
 class EggPriceAgentFireCrawlWithDB:
     def __init__(self, connection_string="mongodb://localhost:27017/", db_name="egg_price_data"):
-        """
-        Initialize the agent with database integration
-        
-        Args:
-            connection_string (str): MongoDB connection string
-            db_name (str): Name of the database
-        """
         self.agent = EggPriceAgentFireCrawl()
         self.historical_scraper = EggPriceHistoricalScraper()
         self.db = EggPriceDatabase(connection_string, db_name)
@@ -105,29 +91,11 @@ class EggPriceAgentFireCrawlWithDB:
             return None
     
     def process_query(self, query):
-        """
-        Process a user query about egg prices
-        
-        Args:
-            query (str): The user's query about egg prices
-            
-        Returns:
-            str: The agent's response
-        """
         # Get response from the original agent
         response = self.agent.process_query(query)
         return response
     
     def _extract_city_from_query(self, query):
-        """
-        Extract city name from the query if present
-        
-        Args:
-            query (str): The user's query
-            
-        Returns:
-            str or None: City name if found, None otherwise
-        """
         query = query.lower()
         
         # Get list of cities from the agent
@@ -223,9 +191,6 @@ class EggPriceAgentFireCrawlWithDB:
                     break
     
     def close(self):
-        """
-        Close the database connection
-        """
         self.db.close()
 
 
